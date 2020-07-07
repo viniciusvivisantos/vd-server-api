@@ -24,7 +24,6 @@ export class UserService {
     });
   }
   async create(dtoUser: CreateUserDto) {
-    const md5 = require('md5');
     let user = new User();
     user.username = dtoUser.username;
     user.password = await encryptPassword(dtoUser.password);
