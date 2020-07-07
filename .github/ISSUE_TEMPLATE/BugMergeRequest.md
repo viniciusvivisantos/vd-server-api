@@ -7,5 +7,3 @@ Please include a summary of what was the bug. Please also include relevant motiv
 - Put here the summary of the bug you solved
 
 ---
-
-c/c @luizalabs/celula\-implantacao
