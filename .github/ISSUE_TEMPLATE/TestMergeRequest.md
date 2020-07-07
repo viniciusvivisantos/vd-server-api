@@ -12,5 +12,3 @@ Please include a summary of the test. Please also include relevant motivation an
 - Put here the summary of the classes that you tested
 
 ---
-
-c/c @luizalabs/celula\-implantacao
