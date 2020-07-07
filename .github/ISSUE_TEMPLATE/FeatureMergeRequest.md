@@ -21,5 +21,3 @@ If you have no tests, feel free to check the shame checkbox
 - Put here the summary changes list
 
 ---
-
-c/c @luizalabs/celula\-implantacao
