@@ -14,6 +14,7 @@ const pckg = require('../package.json');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: false,
+    cors: true
   });
 
   const configuration = app.get(ConfigurationService);

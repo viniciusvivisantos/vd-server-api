@@ -2,7 +2,7 @@ import { Injectable, HttpException, HttpService } from '@nestjs/common';
 import { AxiosError } from 'axios';
 import { User as User } from './user.entity';
 import { UserCrudService } from './user-crud.service';
-import { CreateUserDto, ReadUserDto, } from './dto';
+import { CreateUserDto, ReadUserDto, LoginUserDto, RecoveryPasswordDto, } from './dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, getRepository, getConnection } from 'typeorm';
 import { paginate, IPaginationOptions } from 'nestjs-typeorm-paginate';
@@ -10,7 +10,6 @@ import { LogService } from 'src/logger/log.service';
 import { HistoryService } from '../history/history.service'
 import { UpdateUserDto } from './dto/update-user.dto';
 import { encryptPassword } from 'src/utils/encrypt-password';
-import { UserModule } from './user.module';
 @Injectable()
 export class UserService {
   constructor(
@@ -37,21 +36,54 @@ export class UserService {
       throw new HttpException(`Houve um erro ao tentar criar o usuario '${user.username}'`, errorDetails.status);
     })
   }
+
   async paginate(options: IPaginationOptions) {
     return await paginate<ReadUserDto>(this.repository, options);;
   }
   async findOne(userUniqueId: string) {
     return await this.userCrudService.findOne({ where: { userUniqueId: userUniqueId } }).catch(error => {
       const errorDetails = JSON.parse(JSON.stringify(error));
-      this.logger.error(`Erro ao buscar o UUID ${userUniqueId}'\nErro: ${error}`)
+      this.logger.error(`Erro ao buscar o UUID ${userUniqueId}'\nErro: ${error}`);
       throw new HttpException(`Houve um erro ao buscar o UUID ${userUniqueId}'`, errorDetails.status);
     });
+  }
+
+  async authenticateUser(dtoAuthenticate: LoginUserDto) {
+    const md5 = require('md5');
+    const responseUser = await this.userCrudService.findOne({ where: { username: dtoAuthenticate.username } }).catch(error => {
+      const errorDetails = JSON.parse(JSON.stringify(error));
+      this.logger.error(`Nome de usuário ou senha inválido! \nUsuário: ${dtoAuthenticate.username} \nErro: ${error}`)
+      throw new HttpException(`Nome de usuário ou senha inválido! \nUsuário: ${dtoAuthenticate.username}`, errorDetails.status);
+    });
+    if (responseUser) {
+      const encryptedPassword = await encryptPassword(dtoAuthenticate.password);
+      if (encryptedPassword == responseUser.password) {
+        return responseUser;
+      } else {
+        this.logger.error(`Senha inválida, user: '${dtoAuthenticate.username}'`);
+        throw new HttpException(`Nome de usuário ou senha inválido! \nUsuário: ${dtoAuthenticate.username}`, 401);
+      }
+    }
+  }
+
+  async recoveryPassword(recoveryPasswordDto: RecoveryPasswordDto){
+    const responseUser = await this.userCrudService.findOne({ where: { username: recoveryPasswordDto.username, userEmail: recoveryPasswordDto.userEmail } }).catch(error => {
+      const errorDetails = JSON.parse(JSON.stringify(error));
+      this.logger.error(`Erro ao buscar o usuário ${recoveryPasswordDto.username} ou o email ${recoveryPasswordDto.userEmail}\nErro: ${error}`);
+      throw new HttpException(`Nome de usuário ou email inválido! \nUsuário ${recoveryPasswordDto.username} | Email: ${recoveryPasswordDto.userEmail}`, errorDetails.status);
+    });
+    if(responseUser){
+      return responseUser;
+    }else{
+      this.logger.error(`Erro ao buscar o usuário ${recoveryPasswordDto.username} ou o email ${recoveryPasswordDto.userEmail}`);
+      throw new HttpException(`Nome de usuário ou email inválido! \nUsuário ${recoveryPasswordDto.username} | Email: ${recoveryPasswordDto.userEmail}`, 404);
+    }
   }
 
   async findOneByEmail(userEmail: string) {
     return await this.userCrudService.findOne({ where: { userEmail: userEmail } }).catch(error => {
       const errorDetails = JSON.parse(JSON.stringify(error));
-      this.logger.error(`Erro ao buscar o email '${userEmail}'\nErro: ${error}`)
+      this.logger.error(`Erro ao buscar o email '${userEmail}'\nErro: ${error}`);
       throw new HttpException(`Houve um erro ao buscar o email '${userEmail}'`, errorDetails.status);
     });
   }
@@ -59,14 +91,14 @@ export class UserService {
   async findOneByUsername(username: string) {
     return await this.userCrudService.findOne({ where: { username: username } }).catch(error => {
       const errorDetails = JSON.parse(JSON.stringify(error));
-      this.logger.error(`Erro ao buscar o usuário '${username}'\nErro: ${error}`)
+      this.logger.error(`Erro ao buscar o usuário '${username}'\nErro: ${error}`);
       throw new HttpException(`Houve um erro ao buscar o usuário '${username}'`, errorDetails.status);
     });
   }
 
   async updateUser(userUniqueId: string, dtoUpdate: UpdateUserDto) {
     let user = new User();
-    var responseUser = await this.userCrudService.findOne({ where: { userUniqueId: userUniqueId } }).catch(error => {
+    const responseUser = await this.userCrudService.findOne({ where: { userUniqueId: userUniqueId } }).catch(error => {
       const errorDetails = JSON.parse(JSON.stringify(error));
       this.logger.error(`Erro ao tentar atualizar o usuário ${user.userUniqueId ? `'${user.userUniqueId} -` : ''} ${user.username ? `${user.username}'` : ''}\nErro: ${error}`);
       throw new HttpException(`Houve um erro ao tentar atualizar o usuario ${user.userUniqueId ? `'${user.userUniqueId} -` : ''} ${user.username ? `${user.username}'` : ''}`, errorDetails.status);

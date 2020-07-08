@@ -1,6 +1,6 @@
 import { Controller, Get, Body, Post, Param, Query, Put } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiOperation, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
-import { CreateUserDto, ReadUserDto, FindOneParams, UpdateUserDto } from './dto';
+import { CreateUserDto, ReadUserDto, FindOneParams, UpdateUserDto, LoginUserDto, RecoveryPasswordDto } from './dto';
 import { UserService } from './user.service';
 import { ResponseMapper } from '../decorator/response-mapper.decorator';
 import { ResponseReadUserDto } from './dto/read-user.dto';
@@ -21,6 +21,17 @@ export class UserController {
   @ResponseMapper(ReadUserDto)
   async create(@Body() createUserDto: CreateUserDto) {
     return await this.userService.create(createUserDto);
+  }
+
+  @Post('recoveryPassword')
+  @ApiOperation({ summary: 'Solicitação de alteração de senha do usuário' })
+  @ApiBody({ type: RecoveryPasswordDto })
+  @ApiResponse({ status: 201, description: 'Solicitação enviada com sucesso.', type: ReadUserDto })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiResponse({ status: 500, description: 'Erro na tentativa de solicitar a alteração de senha do usuário' })
+  @ResponseMapper(ReadUserDto)
+  async authenticate(@Body() recoveryPasswordDto: RecoveryPasswordDto) {
+    return await this.userService.recoveryPassword(recoveryPasswordDto);
   }
 
   @Put('edit/:userUniqueId')
